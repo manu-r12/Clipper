@@ -1,24 +1,24 @@
+////
+////  ContentView.swift
+////  Clipper
+////
+////  Created by Manu on 2026-04-14.
+////
 //
-//  ContentView.swift
-//  Clipper
+//import SwiftUI
 //
-//  Created by Manu on 2026-04-14.
+//struct ContentView: View {
+//    var body: some View {
+//        VStack {
+//            Image(systemName: "globe")
+//                .imageScale(.large)
+//                .foregroundStyle(.tint)
+//            Text("Hello, world!")
+//        }
+//        .padding()
+//    }
+//}
 //
-
-import SwiftUI
-
-struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
-
-#Preview {
-    ContentView()
-}
+//#Preview {
+//    ContentView()
+//}
