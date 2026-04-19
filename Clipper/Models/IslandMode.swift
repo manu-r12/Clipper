@@ -9,5 +9,6 @@ import Foundation
 
 enum IslandMode {
     case closed
+    case peek
     case expanded
 }

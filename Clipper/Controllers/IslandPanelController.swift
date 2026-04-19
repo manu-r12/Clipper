@@ -128,15 +128,12 @@ final class IslandPanelController {
     }
 
     private func updateHoverState() {
-        guard let panel, let screen = NSScreen.main else { return }
+        guard let screen = NSScreen.main else { return }
 
         let mouseLocation = NSEvent.mouseLocation
 
-        let closedSize = IslandPositioning.closedPillSize(on: screen)
-        let closedFrame = IslandPositioning.topCenterFrame(for: closedSize, on: screen)
-
-        let activationFrame = closedFrame.insetBy(dx: -10, dy: 0)
-        let sustainFrame = panel.frame.insetBy(dx: -8, dy: -8)
+        let activationFrame = IslandPositioning.hoverActivationFrame(on: screen)
+        let sustainFrame = IslandPositioning.hoverSustainFrame(on: screen)
 
         let pointerInActivation = activationFrame.contains(mouseLocation)
         let pointerInSustain = sustainFrame.contains(mouseLocation)
@@ -146,20 +143,23 @@ final class IslandPanelController {
         switch state.currentMode {
         case .closed:
             if pointerInActivation {
-                state.requestHoverOpen()
+                state.requestHoverPeek()
             } else {
-                state.cancelPendingOpen()
+                state.cancelPendingPeek()
             }
 
-        case .expanded:
+        case .peek:
             if pointerInSustain {
                 state.cancelPendingClose()
             } else {
                 state.requestHoverClose()
             }
+
+        case .expanded:
+            break
         }
     }
-
+    
     private func installOutsideClickMonitor() {
         guard globalClickMonitor == nil else { return }
 
