@@ -7,7 +7,11 @@ import CoreGraphics
 import AppKit
 
 enum IslandPositioning {
-    static func size(for mode: IslandMode, on screen: NSScreen, expandedContentSize: CGSize) -> CGSize {
+    static func size(
+        for mode: IslandMode,
+        on screen: NSScreen,
+        expandedContent: ExpandedIslandContent?
+    ) -> CGSize {
         switch mode {
         case .closed:
             return closedNotchSize(on: screen)
@@ -16,7 +20,7 @@ enum IslandPositioning {
             return peekSize(on: screen)
 
         case .expanded:
-            return expandedSize(from: expandedContentSize)
+            return expandedSize(for: expandedContent ?? .media)
         }
     }
 
@@ -25,14 +29,15 @@ enum IslandPositioning {
         var notchHeight: CGFloat = 32
 
         if let leftArea = screen.auxiliaryTopLeftArea?.width,
-           let rightArea = screen.auxiliaryTopRightArea?.width {
+           let rightArea = screen.auxiliaryTopRightArea?.width,
+           screen.safeAreaInsets.top > 0 {
             notchWidth = screen.frame.width - leftArea - rightArea + 4
         }
 
         if screen.safeAreaInsets.top > 0 {
             notchHeight = screen.safeAreaInsets.top
         } else {
-            notchHeight = screen.frame.maxY - screen.visibleFrame.maxY
+            notchHeight = max(30, screen.frame.maxY - screen.visibleFrame.maxY)
         }
 
         return CGSize(width: notchWidth, height: notchHeight)
@@ -40,14 +45,17 @@ enum IslandPositioning {
 
     static func peekSize(on screen: NSScreen) -> CGSize {
         let base = closedNotchSize(on: screen)
-        return CGSize(width: base.width + 58, height: base.height + 8)
+        return CGSize(
+            width: base.width + 58,
+            height: base.height + 10
+        )
     }
 
-    static func expandedSize(from measured: CGSize) -> CGSize {
-        CGSize(
-            width: measured.width,
-            height: measured.height
-        )
+    static func expandedSize(for content: ExpandedIslandContent) -> CGSize {
+        switch content {
+        case .media:
+            return CGSize(width: 430, height: 146)
+        }
     }
 
     static func topCenterFrame(for size: CGSize, on screen: NSScreen) -> NSRect {
@@ -73,5 +81,4 @@ enum IslandPositioning {
         let peek = topCenterFrame(for: peekSize(on: screen), on: screen)
         return peek.insetBy(dx: -12, dy: -8)
     }
-    
 }

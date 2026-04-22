@@ -14,15 +14,15 @@ struct ExpandedMediaControlsView: View {
     var body: some View {
         HStack(spacing: 16) {
             artworkBlock
-            textBlock
-            Spacer(minLength: 12)
-            controlsBlock
+
+            VStack(alignment: .leading, spacing: 8) {
+                textBlock
+                controlsBlock
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
         }
-        .padding(.leading, 30)
-        .padding(.trailing, 30)
-        .padding(.top, 16)
-        .padding(.bottom, 16)
-        .frame(width: 520, height: 108, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     private var item: NowPlayingItem? {
@@ -31,7 +31,7 @@ struct ExpandedMediaControlsView: View {
 
     private var artworkBlock: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -44,31 +44,30 @@ struct ExpandedMediaControlsView: View {
                 )
 
             Image(systemName: "music.note")
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.92))
         }
-        .frame(width: 56, height: 56)
+        .frame(width: 64, height: 64)
     }
 
     private var textBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(item?.title ?? "Nothing Playing")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
                 .truncationMode(.tail)
 
             Text(item.map { "\($0.artist) • \($0.appName)" } ?? "No active media session")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.62))
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
-        .frame(maxWidth: 220, alignment: .leading)
     }
 
     private var controlsBlock: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             IslandActionButton(systemImage: "backward.fill", isPrimary: false) {
                 nowPlayingState.previousTrack()
             }

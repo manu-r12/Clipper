@@ -7,9 +7,11 @@ import AppKit
 import SwiftUI
 import Combine
 
+@MainActor
 final class IslandPanelController {
     private let state: IslandState
     private let nowPlayingState: NowPlayingState
+
     private var panel: IslandPanel?
     private var cancellables = Set<AnyCancellable>()
     private var hoverTimer: Timer?
@@ -47,11 +49,11 @@ final class IslandPanelController {
 
         reposition(animated: false)
         panel?.orderFrontRegardless()
+
         startHoverPolling()
         installOutsideClickMonitor()
         installEscapeKeyMonitor()
     }
-
 
     private func bindState() {
         state.$mode
@@ -61,7 +63,7 @@ final class IslandPanelController {
             }
             .store(in: &cancellables)
 
-        state.$expandedContentSize
+        state.$expandedContent
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 guard self?.state.currentMode == .expanded else { return }
@@ -76,7 +78,7 @@ final class IslandPanelController {
             }
             .store(in: &cancellables)
     }
-    
+
     private func updateKeyFocus(for isPinned: Bool) {
         guard let panel else { return }
 
@@ -87,20 +89,16 @@ final class IslandPanelController {
             panel.orderFrontRegardless()
         }
     }
-    
+
     private func installEscapeKeyMonitor() {
         guard localKeyMonitor == nil else { return }
 
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
             guard let self else { return event }
 
-            if event.keyCode == 53 { // Escape
-                if self.state.isPinnedOpen || self.state.currentMode == .expanded {
-                    Task { @MainActor in
-                        self.state.closeAll()
-                    }
-                    return nil
-                }
+            if event.keyCode == 53, self.state.isPinnedOpen {
+                self.state.closeAll()
+                return nil
             }
 
             return event
@@ -113,14 +111,14 @@ final class IslandPanelController {
         let size = IslandPositioning.size(
             for: state.currentMode,
             on: screen,
-            expandedContentSize: state.expandedContentSize
+            expandedContent: state.expandedContent
         )
 
         let frame = IslandPositioning.topCenterFrame(for: size, on: screen)
 
         if animated {
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.40
+                context.duration = animationDuration(for: state.currentMode)
                 context.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.85, 0.25, 1.0)
                 panel.animator().setFrame(frame, display: true)
             }
@@ -129,12 +127,24 @@ final class IslandPanelController {
         }
     }
 
+    private func animationDuration(for mode: IslandMode) -> TimeInterval {
+        switch mode {
+        case .closed:
+            return 0.30
+        case .peek:
+            return 0.24
+        case .expanded:
+            return 0.36
+        }
+    }
 
     private func startHoverPolling() {
         hoverTimer?.invalidate()
 
-        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
-            self?.updateHoverState()
+        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { _ in
+            Task { @MainActor [weak self] in
+                self?.updateHoverState()
+            }
         }
 
         hoverTimer = timer
@@ -173,7 +183,7 @@ final class IslandPanelController {
             break
         }
     }
-    
+
     private func installOutsideClickMonitor() {
         guard globalClickMonitor == nil else { return }
 
@@ -186,3 +196,4 @@ final class IslandPanelController {
         }
     }
 }
+

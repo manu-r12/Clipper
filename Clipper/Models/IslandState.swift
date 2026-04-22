@@ -9,10 +9,15 @@
 import SwiftUI
 import Combine
 
+enum ExpandedIslandContent {
+    case media
+}
+
+@MainActor
 final class IslandState: ObservableObject {
     @Published private(set) var mode: IslandMode = .closed
     @Published private(set) var isPinnedOpen: Bool = false
-    @Published var expandedContentSize: CGSize = CGSize(width: 520, height: 108)
+    @Published private(set) var expandedContent: ExpandedIslandContent? = nil
 
     private var pendingPeekTask: Task<Void, Never>?
     private var pendingCloseTask: Task<Void, Never>?
@@ -23,11 +28,6 @@ final class IslandState: ObservableObject {
     private let hoverCloseDelay: Duration = .milliseconds(180)
 
     var currentMode: IslandMode { mode }
-
-    func updateExpandedContentSize(_ size: CGSize) {
-        // Intentionally ignored for the media prototype to avoid
-        // a second resize after expansion.
-    }
 
     func requestHoverPeek() {
         guard mode == .closed else { return }
@@ -98,6 +98,7 @@ final class IslandState: ObservableObject {
 
         isPinnedOpen = true
         reopenRequiresExit = false
+        expandedContent = .media
 
         withAnimation(IslandAnimations.shellSpring) {
             mode = .expanded
@@ -110,6 +111,7 @@ final class IslandState: ObservableObject {
 
         isPinnedOpen = false
         reopenRequiresExit = true
+        expandedContent = nil
 
         withAnimation(IslandAnimations.shellSpring) {
             mode = .closed
