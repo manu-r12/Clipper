@@ -7,7 +7,7 @@ import CoreGraphics
 import AppKit
 
 enum IslandPositioning {
-    static func size(for mode: IslandMode, on screen: NSScreen) -> CGSize {
+    static func size(for mode: IslandMode, on screen: NSScreen, expandedContentSize: CGSize) -> CGSize {
         switch mode {
         case .closed:
             return closedNotchSize(on: screen)
@@ -16,7 +16,7 @@ enum IslandPositioning {
             return peekSize(on: screen)
 
         case .expanded:
-            return CGSize(width: 460, height: 96)
+            return expandedSize(from: expandedContentSize)
         }
     }
 
@@ -40,9 +40,13 @@ enum IslandPositioning {
 
     static func peekSize(on screen: NSScreen) -> CGSize {
         let base = closedNotchSize(on: screen)
-        return CGSize(
-            width: base.width + 58,
-            height: base.height + 8
+        return CGSize(width: base.width + 58, height: base.height + 8)
+    }
+
+    static func expandedSize(from measured: CGSize) -> CGSize {
+        CGSize(
+            width: measured.width,
+            height: measured.height
         )
     }
 
@@ -60,16 +64,14 @@ enum IslandPositioning {
         )
     }
 
-    // Small rect that triggers peek from closed state.
     static func hoverActivationFrame(on screen: NSScreen) -> NSRect {
         let closed = topCenterFrame(for: closedNotchSize(on: screen), on: screen)
         return closed.insetBy(dx: -10, dy: 0)
     }
 
-    // Stable larger rect that keeps peek alive.
-    // Important: this is based on the target peek frame, not the live panel frame.
     static func hoverSustainFrame(on screen: NSScreen) -> NSRect {
         let peek = topCenterFrame(for: peekSize(on: screen), on: screen)
         return peek.insetBy(dx: -12, dy: -8)
     }
+    
 }

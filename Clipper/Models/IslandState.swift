@@ -12,6 +12,7 @@ import Combine
 final class IslandState: ObservableObject {
     @Published private(set) var mode: IslandMode = .closed
     @Published private(set) var isPinnedOpen: Bool = false
+    @Published var expandedContentSize: CGSize = CGSize(width: 520, height: 108)
 
     private var pendingPeekTask: Task<Void, Never>?
     private var pendingCloseTask: Task<Void, Never>?
@@ -22,6 +23,11 @@ final class IslandState: ObservableObject {
     private let hoverCloseDelay: Duration = .milliseconds(180)
 
     var currentMode: IslandMode { mode }
+
+    func updateExpandedContentSize(_ size: CGSize) {
+        // Intentionally ignored for the media prototype to avoid
+        // a second resize after expansion.
+    }
 
     func requestHoverPeek() {
         guard mode == .closed else { return }
@@ -39,7 +45,6 @@ final class IslandState: ObservableObject {
             try? await Task.sleep(for: hoverPeekDelay)
             guard !Task.isCancelled else { return }
             guard !self.isPinnedOpen else { return }
-            guard self.mode == .closed else { return }
 
             withAnimation(IslandAnimations.peekSpring) {
                 self.mode = .peek
@@ -67,7 +72,6 @@ final class IslandState: ObservableObject {
             try? await Task.sleep(for: hoverCloseDelay)
             guard !Task.isCancelled else { return }
             guard !self.isPinnedOpen else { return }
-            guard self.mode == .peek else { return }
 
             withAnimation(IslandAnimations.peekSpring) {
                 self.mode = .closed

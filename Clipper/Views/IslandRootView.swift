@@ -12,70 +12,55 @@ import AppKit
 struct IslandRootView: View {
     @EnvironmentObject var state: IslandState
     @EnvironmentObject var nowPlayingState: NowPlayingState
+
     @State private var pressed = false
     @State private var lastHapticTime: Date = .distantPast
+    @State private var showExpandedContent = false
+    @State private var expandedRevealTask: Task<Void, Never>?
 
     private var shapeParameters: (shoulderInset: CGFloat, shoulderDepth: CGFloat, bottomRadius: CGFloat) {
         switch state.currentMode {
         case .closed:
             return (16, 10, 10)
+
         case .peek:
             return (17, 10.5, 13)
+
         case .expanded:
-            return (28, 16, 24)
+            return (18, 12, 24)
         }
+    }
+
+    private var currentShape: AdaptiveNotchShape {
+        AdaptiveNotchShape(
+            shoulderInset: shapeParameters.shoulderInset,
+            shoulderDepth: shapeParameters.shoulderDepth,
+            bottomRadius: shapeParameters.bottomRadius
+        )
     }
 
     var body: some View {
         GeometryReader { _ in
             ZStack {
-                AdaptiveNotchShape(
-                    shoulderInset: shapeParameters.shoulderInset,
-                    shoulderDepth: shapeParameters.shoulderDepth,
-                    bottomRadius: shapeParameters.bottomRadius
-                )
-                .fill(Color.black)
-                .shadow(
-                    color: state.currentMode == .expanded ? .black.opacity(0.12) : .clear,
-                    radius: state.currentMode == .expanded ? 12 : 0,
-                    y: state.currentMode == .expanded ? 5 : 0
-                )
-                .scaleEffect(pressed ? 0.985 : (state.currentMode == .peek ? 1.003 : 1.0))
-                .animation(
-                    state.currentMode == .peek ? IslandAnimations.peekSpring : IslandAnimations.shellSpring,
-                    value: state.currentMode
-                )
-                .animation(IslandAnimations.peekSpring, value: pressed)
+                currentShape
+                    .fill(Color.black)
+                    .shadow(
+                        color: state.currentMode == .expanded ? .black.opacity(0.12) : .clear,
+                        radius: state.currentMode == .expanded ? 12 : 0,
+                        y: state.currentMode == .expanded ? 5 : 0
+                    )
 
-                Group {
-                    switch state.currentMode {
-                    case .closed:
-                        ClosedIslandView()
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .transition(.opacity)
-
-                    case .peek:
-                        PeekIslandView()
-                            .padding(.horizontal, 0)
-                            .padding(.vertical, 0)
-                            .transition(.opacity)
-
-                    case .expanded:
-                        ExpandedIslandView(isPinned: state.isPinnedOpen)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 14)
-                            .transition(
-                                .asymmetric(
-                                    insertion: .opacity.combined(with: .scale(scale: 0.985)),
-                                    removal: .opacity.combined(with: .scale(scale: 0.98))
-                                )
-                            )
-                    }
-                }
-                .animation(IslandAnimations.contentSpring, value: state.currentMode)
-                .animation(IslandAnimations.contentSpring, value: state.isPinnedOpen)
+                closedLayer
+                peekLayer
+                expandedLayer
             }
+            .clipShape(currentShape)
+            .scaleEffect(pressed ? 0.985 : (state.currentMode == .peek ? 1.002 : 1.0))
+            .animation(
+                state.currentMode == .peek ? IslandAnimations.peekSpring : IslandAnimations.shellSpring,
+                value: state.currentMode
+            )
+            .animation(IslandAnimations.peekSpring, value: pressed)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .compositingGroup()
             .contentShape(Rectangle())
@@ -91,10 +76,69 @@ struct IslandRootView: View {
                 perform: {}
             )
             .onChange(of: state.currentMode) { _, newMode in
+                handleModeChange(newMode)
+
                 if newMode == .peek {
                     triggerPeekHapticIfAllowed()
-                } else if newMode == .expanded {
-                    IslandHaptics.expand()
+                }
+            }
+            .onAppear {
+                handleModeChange(state.currentMode)
+            }
+        }
+    }
+
+    private var closedLayer: some View {
+        ClosedIslandView()
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .opacity(state.currentMode == .closed ? 1 : 0)
+            .animation(.easeInOut(duration: 0.10), value: state.currentMode)
+            .allowsHitTesting(state.currentMode == .closed)
+    }
+
+    private var peekLayer: some View {
+        PeekIslandView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .opacity(state.currentMode == .peek ? 1 : 0)
+            .animation(.easeInOut(duration: 0.10), value: state.currentMode)
+            .allowsHitTesting(state.currentMode == .peek)
+    }
+
+    private var expandedLayer: some View {
+        Group {
+            if showExpandedContent {
+                ExpandedMediaControlsView()
+                    .environmentObject(nowPlayingState)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .transition(
+                        .opacity
+                        .combined(with: .blurReplace)
+                        .animation(.interactiveSpring(dampingFraction: 1.0))
+                    )
+            }
+        }
+        .allowsHitTesting(state.currentMode == .expanded)
+    }
+
+    private func handleModeChange(_ mode: IslandMode) {
+        expandedRevealTask?.cancel()
+
+        switch mode {
+        case .closed, .peek:
+            withAnimation(.easeOut(duration: 0.08)) {
+                showExpandedContent = false
+            }
+
+        case .expanded:
+            expandedRevealTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(90))
+                guard !Task.isCancelled else { return }
+                guard state.currentMode == .expanded else { return }
+
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    showExpandedContent = true
                 }
             }
         }

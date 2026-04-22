@@ -61,6 +61,14 @@ final class IslandPanelController {
             }
             .store(in: &cancellables)
 
+        state.$expandedContentSize
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard self?.state.currentMode == .expanded else { return }
+                self?.reposition(animated: true)
+            }
+            .store(in: &cancellables)
+
         state.$isPinnedOpen
             .receive(on: RunLoop.main)
             .sink { [weak self] isPinned in
@@ -102,7 +110,12 @@ final class IslandPanelController {
     private func reposition(animated: Bool) {
         guard let panel, let screen = NSScreen.main else { return }
 
-        let size = IslandPositioning.size(for: state.currentMode, on: screen)
+        let size = IslandPositioning.size(
+            for: state.currentMode,
+            on: screen,
+            expandedContentSize: state.expandedContentSize
+        )
+
         let frame = IslandPositioning.topCenterFrame(for: size, on: screen)
 
         if animated {
@@ -115,6 +128,7 @@ final class IslandPanelController {
             panel.setFrame(frame, display: true)
         }
     }
+
 
     private func startHoverPolling() {
         hoverTimer?.invalidate()
