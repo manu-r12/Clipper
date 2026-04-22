@@ -18,16 +18,21 @@ struct IslandRootView: View {
     @State private var showExpandedContent = false
     @State private var expandedRevealTask: Task<Void, Never>?
 
-    private var shapeParameters: (shoulderInset: CGFloat, shoulderDepth: CGFloat, bottomRadius: CGFloat) {
+    private var shapeParameters: (
+        shoulderInset: CGFloat,
+        shoulderDepth: CGFloat,
+        bottomRadius: CGFloat,
+        shoulderTightness: CGFloat
+    ) {
         switch state.currentMode {
         case .closed:
-            return (16, 10, 10)
+            return (16, 10, 10, 0.82)
 
         case .peek:
-            return (17, 10.5, 14)
+            return (18, 11, 14, 0.86)
 
         case .expanded:
-            return (18, 12, 24)
+            return (22, 12.5, 18, 0.92)
         }
     }
 
@@ -35,29 +40,19 @@ struct IslandRootView: View {
         AdaptiveNotchShape(
             shoulderInset: shapeParameters.shoulderInset,
             shoulderDepth: shapeParameters.shoulderDepth,
-            bottomRadius: shapeParameters.bottomRadius
+            bottomRadius: shapeParameters.bottomRadius,
+            shoulderTightness: shapeParameters.shoulderTightness
         )
     }
 
     var body: some View {
         ZStack {
-            currentShape
-                .fill(Color.black)
-                .overlay(
-                    currentShape
-                        .stroke(Color.white.opacity(0.04), lineWidth: 0.6)
-                )
-                .shadow(
-                    color: state.currentMode == .expanded ? .black.opacity(0.18) : .clear,
-                    radius: state.currentMode == .expanded ? 14 : 0,
-                    y: state.currentMode == .expanded ? 5 : 0
-                )
+            shellLayer
 
             closedLayer
             peekLayer
             expandedLayer
-        }
-        .clipShape(currentShape)
+        }        .clipShape(currentShape)
         .scaleEffect(pressed ? 0.985 : (state.currentMode == .peek ? 1.002 : 1.0))
         .animation(
             state.currentMode == .peek ? IslandAnimations.peekSpring : IslandAnimations.shellSpring,
@@ -90,6 +85,54 @@ struct IslandRootView: View {
         .onAppear {
             handleModeChange(state.currentMode)
         }
+    }
+    
+    private var shellLayer: some View {
+        currentShape
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.black,
+                        Color(red: 0.025, green: 0.025, blue: 0.03)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay {
+                currentShape
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.05),
+                                Color.white.opacity(0.015)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.65
+                    )
+            }
+            .overlay(alignment: .bottom) {
+                currentShape
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                .clear,
+                                Color.white.opacity(state.currentMode == .expanded ? 0.045 : 0.02)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .blur(radius: 18)
+                    .mask(currentShape)
+            }
+            .shadow(
+                color: state.currentMode == .expanded ? .black.opacity(0.18) : .clear,
+                radius: state.currentMode == .expanded ? 14 : 0,
+                y: state.currentMode == .expanded ? 5 : 0
+            )
     }
 
     private var closedLayer: some View {

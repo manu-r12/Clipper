@@ -122,8 +122,13 @@ final class IslandPanelController {
                 context.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.85, 0.25, 1.0)
                 panel.animator().setFrame(frame, display: true)
             }
+            // Use setFrameTopLeftPoint to ensure the top edge remains pinned during transitions
+            DispatchQueue.main.async {
+                panel.setFrameTopLeftPoint(NSPoint(x: frame.origin.x, y: frame.origin.y + frame.size.height))
+            }
         } else {
-            panel.setFrame(frame, display: true)
+            // Use setFrameTopLeftPoint to ensure the top edge remains pinned during transitions
+            panel.setFrameTopLeftPoint(NSPoint(x: frame.origin.x, y: frame.origin.y + frame.size.height))
         }
     }
 

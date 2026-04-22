@@ -1,89 +1,119 @@
-//
-//  ExpandedIslandView.swift
-//  Clipper
-//
-//  Created by Manu on 2026-04-18.
-//
-
-
 import SwiftUI
+import AppKit
 
 struct ExpandedIslandView: View {
     @EnvironmentObject var nowPlayingState: NowPlayingState
     let isPinned: Bool
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             artworkBlock
-            textBlock
-            controlsBlock
+
+            VStack(alignment: .leading, spacing: 10) {
+                titleBlock
+                transportRow
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     private var item: NowPlayingItem? {
         nowPlayingState.item
     }
 
+    private var titleText: String {
+        let text = item?.title.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return text.isEmpty ? "Nothing Playing" : text
+    }
+
+    private var subtitleText: String {
+        guard let item else { return isPinned ? "Pinned open" : "Hover preview" }
+
+        let artist = item.artist.trimmingCharacters(in: .whitespacesAndNewlines)
+        let app = item.appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let status = isPinned ? "Pinned open" : "Hover preview"
+
+        if !artist.isEmpty && !app.isEmpty {
+            return "\(artist) • \(app)"
+        }
+
+        if !artist.isEmpty {
+            return "\(artist) • \(status)"
+        }
+
+        if !app.isEmpty {
+            return "\(app) • \(status)"
+        }
+
+        return status
+    }
+
     private var artworkBlock: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.24, green: 0.24, blue: 0.28),
-                            Color(red: 0.12, green: 0.12, blue: 0.14)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            LinearGradient(
+                colors: [
+                    Color(red: 0.22, green: 0.22, blue: 0.26),
+                    Color(red: 0.10, green: 0.10, blue: 0.12)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
 
-            Image(systemName: "music.note")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.92))
+            if let nsImage = item?.artwork {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "music.note")
+                    .font(.system(size: 23, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.92))
+            }
         }
-        .frame(width: 56, height: 56)
+        .frame(width: 68, height: 68)
+        .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 19, style: .continuous)
+                .stroke(Color.white.opacity(0.05), lineWidth: 0.7)
+        }
+        .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
     }
 
-    private var textBlock: some View {
+    private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(item?.title ?? "Nothing Playing")
-                .font(.system(size: 15, weight: .semibold))
+            Text(titleText)
+                .font(.system(size: 19, weight: .bold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
+                .truncationMode(.tail)
 
-            Text(item.map { "\($0.artist) • \($0.appName)" } ?? "No active media session")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(0.62))
+            Text(subtitleText)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.60))
                 .lineLimit(1)
-
-            Text(isPinned ? "Pinned open" : "Hover preview")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.45))
-                .padding(.top, 2)
+                .truncationMode(.tail)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var controlsBlock: some View {
-        HStack(spacing: 8) {
-            IslandActionButton(systemImage: "backward.fill", isPrimary: false, action: {
+    private var transportRow: some View {
+        HStack(spacing: 10) {
+            IslandActionButton(systemImage: "backward.fill", role: .secondary, size: 36) {
                 nowPlayingState.previousTrack()
-            })
+            }
 
             IslandActionButton(
                 systemImage: item?.isPlaying == true ? "pause.fill" : "play.fill",
-                isPrimary: true,
-                action: {
-                    nowPlayingState.playPause()
-                }
-            )
+                role: .primary,
+                size: 44
+            ) {
+                nowPlayingState.playPause()
+            }
 
-            IslandActionButton(systemImage: "forward.fill", isPrimary: false, action: {
+            IslandActionButton(systemImage: "forward.fill", role: .secondary, size: 36) {
                 nowPlayingState.nextTrack()
-            })
+            }
         }
+        .padding(.top, 2)
     }
 }
-
