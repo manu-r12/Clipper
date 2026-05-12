@@ -40,7 +40,7 @@ struct IslandRootView: View {
         switch state.currentMode {
         case .closed:   return AdaptiveNotchShape(topCornerRadius: 6,  bottomCornerRadius: 14)
         case .peek:     return AdaptiveNotchShape(topCornerRadius: 10, bottomCornerRadius: 18)
-        case .expanded: return AdaptiveNotchShape(topCornerRadius: 19, bottomCornerRadius: 24)
+        case .expanded: return AdaptiveNotchShape(topCornerRadius: 35, bottomCornerRadius: 35)
         }
     }
 
@@ -168,8 +168,6 @@ struct IslandRootView: View {
                showExpandedContent,
                let expandedContent = state.expandedContent {
                 expandedContentView(for: expandedContent)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .transition(
                         .opacity

@@ -4,203 +4,348 @@ import AppKit
 struct ExpandedMediaControlsView: View {
     @EnvironmentObject var nowPlayingState: NowPlayingState
 
+    @State private var sliderValue: Double = 0
     @State private var isDragging = false
-    @State private var scrubTime: Double = 0
+    @State private var lastDragged: Date = .distantPast
 
     private var item: NowPlayingItem? { nowPlayingState.item }
 
     var body: some View {
-        if item != nil {
-            // Top-anchored stack matching Atoll's minimalistic layout:
-            //   [albumArt] [title / artist]        ← header row (52pt tall)
-            //   [progress bar ─────────────]       ← full width, inline times
-            //   [  ←   ▶   →  ]                   ← controls, centered
+        if let item {
             VStack(spacing: 0) {
-                headerRow
-                progressBar
-                    .padding(.top, 8)
-                transportRow
+                headerRow(item: item)
+                progressBar(item: item)
                     .padding(.top, 6)
+                transportRow
+                    .padding(.top, 4)
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 38)
             .padding(.top, 16)
+            .padding(.bottom, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .onAppear {
+                sliderValue = item.estimatedElapsedTime
+            }
+            .onChange(of: item.title) { _, _ in
+                sliderValue = item.elapsedTime
+            }
         } else {
-            Text("Currently no media playing")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.white.opacity(0.35))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 8) {
+                Image(systemName: "music.note.slash")
+                    .font(.system(size: 24, weight: .light))
+                    .foregroundStyle(.gray)
+                Text("Nothing Playing")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.gray)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
     // MARK: - Header
 
-    private var headerRow: some View {
+    private func headerRow(item: NowPlayingItem) -> some View {
         HStack(alignment: .center, spacing: 10) {
-            artworkBlock
+            artworkBlock(item: item)
             VStack(alignment: .leading, spacing: 1) {
-                Text(item?.title ?? "")
-                    .font(.system(size: 13, weight: .semibold))
+                Text(item.title)
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                Text(item?.artist ?? "")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.55))
+                Text(item.artist)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(.gray)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: 52)
+        .frame(height: 50)
     }
 
     // MARK: - Album Art
 
-    private var artworkBlock: some View {
+    private func artworkBlock(item: NowPlayingItem) -> some View {
         ZStack {
-            artworkBackground
-            artworkImage
-        }
-        .frame(width: 52, height: 52)
-        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 0.6)
-        }
-    }
-
-    @ViewBuilder
-    private var artworkImage: some View {
-        if let nsImage = item?.artwork {
-            Image(nsImage: nsImage)
-                .resizable()
-                .scaledToFill()
-        } else {
-            Image(systemName: "music.note")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.7))
-        }
-    }
-
-    private var artworkBackground: some View {
-        LinearGradient(
-            colors: [Color(red: 0.20, green: 0.20, blue: 0.24), Color(red: 0.10, green: 0.10, blue: 0.12)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
-    // MARK: - Progress Bar (full-width, inline time labels)
-
-    @ViewBuilder
-    private var progressBar: some View {
-        if let item, item.duration > 0 {
-            TimelineView(.animation(minimumInterval: 0.5)) { _ in
-                // Inline layout: [elapsed] [track] [duration]
-                HStack(spacing: 8) {
-                    let elapsed = isDragging ? scrubTime : item.estimatedElapsedTime
-                    Text(formatTime(elapsed))
-                        .frame(width: 38, alignment: .leading)
-
-                    GeometryReader { geo in
-                        let progress = min(max(elapsed / item.duration, 0), 1)
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(Color.white.opacity(0.15)).frame(height: isDragging ? 5 : 4)
-                            Capsule()
-                                .fill(Color.white.opacity(isDragging ? 1.0 : 0.8))
-                                .frame(width: geo.size.width * progress, height: isDragging ? 5 : 4)
-                        }
-                        .frame(maxHeight: .infinity, alignment: .center)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    isDragging = true
-                                    scrubTime = min(max(value.location.x / geo.size.width, 0), 1) * item.duration
-                                }
-                                .onEnded { _ in
-                                    nowPlayingState.seek(to: scrubTime)
-                                    isDragging = false
-                                }
-                        )
-                    }
-                    .frame(height: 16)
-
-                    Text(formatTime(item.duration))
-                        .frame(width: 38, alignment: .trailing)
-                }
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.40))
+            LinearGradient(
+                colors: [Color(red: 0.20, green: 0.20, blue: 0.24), Color(red: 0.10, green: 0.10, blue: 0.12)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            if let nsImage = item.artwork {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "music.note")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.7))
             }
         }
+        .frame(width: 50, height: 50)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .opacity(item.isPlaying ? 1.0 : 0.4)
+        .scaleEffect(item.isPlaying ? 1.0 : 0.85)
+        .animation(.easeInOut(duration: 0.2), value: item.isPlaying)
     }
 
-    private func formatTime(_ s: Double) -> String {
-        let t = Int(max(s, 0))
-        return String(format: "%d:%02d", t / 60, t % 60)
+    // MARK: - Progress Bar
+
+    @ViewBuilder
+    private func progressBar(item: NowPlayingItem) -> some View {
+        if item.duration > 0 {
+            TimelineView(
+                .animation(
+                    minimumInterval: 1.0,
+                    paused: !item.isPlaying || item.playbackRate <= 0
+                )
+            ) { timeline in
+                InlineProgressBar(
+                    sliderValue: $sliderValue,
+                    isDragging: $isDragging,
+                    lastDragged: $lastDragged,
+                    duration: item.duration,
+                    elapsedTime: item.elapsedTime,
+                    timestampDate: item.lastUpdated,
+                    playbackRate: item.playbackRate,
+                    isPlaying: item.isPlaying,
+                    currentDate: timeline.date,
+                    onSeek: { nowPlayingState.seek(to: $0) }
+                )
+            }
+        }
     }
 
     // MARK: - Transport Controls
 
     private var transportRow: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 16) {
             Spacer(minLength: 0)
-            MediaButton(systemImage: "backward.fill", size: 40, iconSize: 16, isPrimary: false) {
+            SquircleButton(
+                systemImage: "backward.fill",
+                fontSize: 18,
+                frameSize: CGSize(width: 40, height: 40),
+                cornerRadius: 16,
+                foregroundColor: .white.opacity(0.85),
+                pressEffect: .nudge(-8)
+            ) {
                 nowPlayingState.previousTrack()
             }
-            Spacer(minLength: 0)
-            MediaButton(
+            SquircleButton(
                 systemImage: item?.isPlaying == true ? "pause.fill" : "play.fill",
-                size: 52,
-                iconSize: 22,
-                isPrimary: true
+                fontSize: 28,
+                frameSize: CGSize(width: 60, height: 60),
+                cornerRadius: 24,
+                foregroundColor: .white,
+                symbolEffect: .replace
             ) {
                 nowPlayingState.playPause()
             }
-            Spacer(minLength: 0)
-            MediaButton(systemImage: "forward.fill", size: 40, iconSize: 16, isPrimary: false) {
+            SquircleButton(
+                systemImage: "forward.fill",
+                fontSize: 18,
+                frameSize: CGSize(width: 40, height: 40),
+                cornerRadius: 16,
+                foregroundColor: .white.opacity(0.85),
+                pressEffect: .nudge(8)
+            ) {
                 nowPlayingState.nextTrack()
             }
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
-// MARK: - MediaButton (squircle, matches Atoll's MinimalisticSquircircleButton)
+// MARK: - Inline Progress Bar
 
-private struct MediaButton: View {
+private struct InlineProgressBar: View {
+    @Binding var sliderValue: Double
+    @Binding var isDragging: Bool
+    @Binding var lastDragged: Date
+    let duration: Double
+    let elapsedTime: Double
+    let timestampDate: Date
+    let playbackRate: Double
+    let isPlaying: Bool
+    let currentDate: Date
+    var onSeek: (Double) -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(timeString(from: sliderValue))
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(.gray)
+                .frame(width: 42, alignment: .leading)
+
+            ProgressSlider(
+                value: $sliderValue,
+                range: 0...duration,
+                isDragging: $isDragging,
+                lastDragged: $lastDragged,
+                onSeek: onSeek
+            )
+            .frame(height: max(7, 11))
+            .frame(maxWidth: .infinity)
+            .animation(
+                !isDragging && isPlaying ? .linear(duration: 1.0) : nil,
+                value: sliderValue
+            )
+
+            Text(remainingString)
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(.gray)
+                .frame(width: 48, alignment: .trailing)
+        }
+        .onChange(of: currentDate) { _, newDate in
+            guard !isDragging, timestampDate.timeIntervalSince(lastDragged) > -1 else { return }
+            let estimated = elapsedTime + newDate.timeIntervalSince(timestampDate) * playbackRate
+            sliderValue = min(max(estimated, 0), duration)
+        }
+        .onChange(of: isPlaying) { _, playing in
+            if !playing { sliderValue = elapsedTime }
+        }
+    }
+
+    private var remainingString: String {
+        "-" + timeString(from: max(duration - sliderValue, 0))
+    }
+
+    private func timeString(from seconds: Double) -> String {
+        let t = Int(max(seconds, 0))
+        let h = t / 3600
+        let m = (t % 3600) / 60
+        let s = t % 60
+        return h > 0
+            ? String(format: "%d:%02d:%02d", h, m, s)
+            : String(format: "%d:%02d", m, s)
+    }
+}
+
+// MARK: - Progress Slider (Atoll's CustomSlider)
+
+private struct ProgressSlider: View {
+    @Binding var value: Double
+    var range: ClosedRange<Double>
+    @Binding var isDragging: Bool
+    @Binding var lastDragged: Date
+    var onSeek: (Double) -> Void
+    var restingTrackHeight: CGFloat = 7
+    var draggingTrackHeight: CGFloat = 11
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let trackHeight = isDragging ? draggingTrackHeight : restingTrackHeight
+            let span = range.upperBound - range.lowerBound
+            let progress = span == 0 ? 0 : (value - range.lowerBound) / span
+            let filled = min(max(progress, 0), 1) * width
+
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: trackHeight)
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: filled, height: trackHeight)
+            }
+            .cornerRadius(trackHeight / 2)
+            .frame(height: max(restingTrackHeight, draggingTrackHeight))
+            .contentShape(Rectangle())
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        withAnimation { isDragging = true }
+                        let newValue = range.lowerBound + Double(gesture.location.x / width) * span
+                        value = min(max(newValue, range.lowerBound), range.upperBound)
+                    }
+                    .onEnded { _ in
+                        onSeek(value)
+                        isDragging = false
+                        lastDragged = Date()
+                    }
+            )
+            .animation(.bouncy.speed(1.4), value: isDragging)
+        }
+    }
+}
+
+// MARK: - Squircle Button (Atoll's MinimalisticSquircircleButton)
+
+private struct SquircleButton: View {
     let systemImage: String
-    let size: CGFloat
-    let iconSize: CGFloat
-    let isPrimary: Bool
+    let fontSize: CGFloat
+    let frameSize: CGSize
+    let cornerRadius: CGFloat
+    let foregroundColor: Color
+    var pressEffect: PressEffect = .none
+    var symbolEffect: SymbolEffect = .none
     let action: () -> Void
 
     @State private var isHovering = false
-    @State private var isPressed = false
+    @State private var pressOffset: CGFloat = 0
 
     var body: some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: iconSize, weight: .semibold))
-                .foregroundStyle(isPrimary ? .black : .white)
-                .offset(x: systemImage == "play.fill" ? 1 : 0)
-                .frame(width: size, height: size)
+        Button {
+            triggerPressEffect()
+            action()
+        } label: {
+            iconView
+                .frame(width: frameSize.width, height: frameSize.height)
                 .background(
-                    RoundedRectangle(cornerRadius: size * 0.38, style: .continuous)
-                        .fill(isPrimary
-                              ? AnyShapeStyle(Color.white)
-                              : AnyShapeStyle(Color.white.opacity(isHovering ? 0.14 : 0.08)))
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(isHovering ? Color.white.opacity(0.18) : .clear)
                 )
+                .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         }
         .buttonStyle(.plain)
-        .scaleEffect(isPressed ? 0.93 : 1.0)
-        .animation(.easeOut(duration: 0.10), value: isPressed)
-        .onHover { isHovering = $0 }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
-        )
+        .offset(x: pressOffset)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.18)) { isHovering = hovering }
+        }
+    }
+
+    @ViewBuilder
+    private var iconView: some View {
+        let base = Image(systemName: systemImage)
+            .font(.system(size: fontSize, weight: .semibold))
+            .foregroundStyle(foregroundColor)
+
+        switch symbolEffect {
+        case .none:
+            base
+        case .replace:
+            if #available(macOS 14.0, *) {
+                base.contentTransition(.symbolEffect(.replace))
+            } else {
+                base
+            }
+        }
+    }
+
+    private func triggerPressEffect() {
+        switch pressEffect {
+        case .none: break
+        case .nudge(let amount):
+            withAnimation(.spring(response: 0.16, dampingFraction: 0.72)) {
+                pressOffset = amount
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                withAnimation(.spring(response: 0.26, dampingFraction: 0.8)) {
+                    pressOffset = 0
+                }
+            }
+        }
+    }
+
+    enum PressEffect {
+        case none
+        case nudge(CGFloat)
+    }
+
+    enum SymbolEffect {
+        case none
+        case replace
     }
 }
