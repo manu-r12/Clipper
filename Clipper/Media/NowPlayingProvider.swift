@@ -16,4 +16,5 @@ protocol NowPlayingProvider: AnyObject {
     func sendNextTrack()
     func sendPreviousTrack()
     func sendSeek(to time: Double)
+    func sendToggleShuffle(currentlyShuffled: Bool)
 }

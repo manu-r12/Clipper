@@ -13,6 +13,7 @@ struct NowPlayingItem {
     let appName: String
     let artwork: NSImage?
     let isPlaying: Bool
+    let isShuffled: Bool
     let duration: Double       // total track length in seconds
     let elapsedTime: Double    // elapsed at lastUpdated
     let lastUpdated: Date      // when elapsedTime was sampled

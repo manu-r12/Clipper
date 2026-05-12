@@ -54,7 +54,7 @@ enum IslandPositioning {
     static func expandedSize(for content: ExpandedIslandContent) -> CGSize {
         switch content {
         case .media:
-            return CGSize(width: 420, height: 175)
+            return CGSize(width: 420, height: 185)
         }
     }
 

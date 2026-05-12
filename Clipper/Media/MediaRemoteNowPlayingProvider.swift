@@ -14,6 +14,7 @@ import Foundation
 
 private typealias MRSendCommandFn     = @convention(c) (Int, AnyObject?) -> Void
 private typealias MRSetElapsedTimeFn  = @convention(c) (Double) -> Void
+private typealias MRSetShuffleModeFn  = @convention(c) (Int) -> Void
 
 // MARK: - JSON payloads (mirrors Atoll's NowPlayingUpdate / NowPlayingPayload)
 
@@ -32,6 +33,7 @@ private struct NowPlayingPayload: Codable {
     let timestamp: String?
     let playbackRate: Double?
     let playing: Bool?
+    let shuffleMode: Int?
     let parentApplicationBundleIdentifier: String?
     let bundleIdentifier: String?
 }
@@ -86,6 +88,7 @@ final class MediaRemoteNowPlayingProvider: NowPlayingProvider {
     // Command-only function pointers (loaded directly from MediaRemote).
     private let sendCommandFn: MRSendCommandFn?
     private let setElapsedTimeFn: MRSetElapsedTimeFn?
+    private let setShuffleModeFn: MRSetShuffleModeFn?
 
     private var process: Process?
     private var pipeHandler: JSONLinesPipeHandler?
@@ -104,9 +107,12 @@ final class MediaRemoteNowPlayingProvider: NowPlayingProvider {
                 .map { unsafeBitCast($0, to: MRSendCommandFn.self) }
             setElapsedTimeFn = CFBundleGetFunctionPointerForName(bundle, "MRMediaRemoteSetElapsedTime" as CFString)
                 .map { unsafeBitCast($0, to: MRSetElapsedTimeFn.self) }
+            setShuffleModeFn = CFBundleGetFunctionPointerForName(bundle, "MRMediaRemoteSetShuffleMode" as CFString)
+                .map { unsafeBitCast($0, to: MRSetShuffleModeFn.self) }
         } else {
             sendCommandFn = nil
             setElapsedTimeFn = nil
+            setShuffleModeFn = nil
         }
 
         Task { await self.startSubprocess() }
@@ -120,10 +126,11 @@ final class MediaRemoteNowPlayingProvider: NowPlayingProvider {
 
     // MARK: - Commands
 
-    func sendPlayPause()           { sendCommandFn?(2, nil) }
-    func sendNextTrack()           { sendCommandFn?(4, nil) }
-    func sendPreviousTrack()       { sendCommandFn?(5, nil) }
-    func sendSeek(to time: Double) { setElapsedTimeFn?(time) }
+    func sendPlayPause()                            { sendCommandFn?(2, nil) }
+    func sendNextTrack()                            { sendCommandFn?(4, nil) }
+    func sendPreviousTrack()                        { sendCommandFn?(5, nil) }
+    func sendSeek(to time: Double)                  { setElapsedTimeFn?(time) }
+    func sendToggleShuffle(currentlyShuffled: Bool) { setShuffleModeFn?(currentlyShuffled ? 0 : 1) }
 
     // MARK: - Subprocess
 
@@ -182,7 +189,8 @@ final class MediaRemoteNowPlayingProvider: NowPlayingProvider {
         let duration = p.duration ?? (isDiff ? prev?.duration : nil) ?? 0
         let elapsed = p.elapsedTime ?? (isDiff ? prev?.elapsedTime : nil) ?? 0
         let rate = p.playbackRate ?? (isDiff ? prev?.playbackRate : nil) ?? 0
-        let isPlaying = p.playing ?? (isDiff ? prev?.isPlaying : nil) ?? false
+        let isPlaying  = p.playing     ?? (isDiff ? prev?.isPlaying  : nil) ?? false
+        let isShuffled = (p.shuffleMode ?? (isDiff ? (prev?.isShuffled == true ? 1 : 0) : nil) ?? 0) != 0
 
         var timestamp = Date()
         if let ts = p.timestamp, let parsed = ISO8601DateFormatter().date(from: ts) {
@@ -203,12 +211,18 @@ final class MediaRemoteNowPlayingProvider: NowPlayingProvider {
             return
         }
 
+        let appName = p.parentApplicationBundleIdentifier
+            ?? p.bundleIdentifier
+            ?? (isDiff ? prev?.appName : nil)
+            ?? ""
+
         let item = NowPlayingItem(
             title: title,
             artist: artist,
-            appName: p.parentApplicationBundleIdentifier ?? p.bundleIdentifier ?? "",
+            appName: appName,
             artwork: artwork,
             isPlaying: isPlaying,
+            isShuffled: isShuffled,
             duration: duration,
             elapsedTime: elapsed,
             lastUpdated: timestamp,

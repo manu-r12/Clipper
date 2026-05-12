@@ -56,6 +56,8 @@ struct IslandRootView: View {
         // Inner frame: animates between closed/peek/expanded sizes.
         // The panel is fixed at expanded-size + shadow padding; content grows downward from the top edge.
         .frame(width: targetSize.width, height: targetSize.height, alignment: .top)
+        .clipped()
+        .drawingGroup()
         .clipShape(currentShape)
         .compositingGroup()
         // Shadow lives outside clipShape so it renders around (not clipped by) the notch shape.
@@ -103,45 +105,7 @@ struct IslandRootView: View {
 
     private var shellLayer: some View {
         currentShape
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color.black,
-                        Color(red: 0.025, green: 0.025, blue: 0.03)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .overlay {
-                currentShape
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.05),
-                                Color.white.opacity(0.015)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.65
-                    )
-            }
-            .overlay(alignment: .bottom) {
-                currentShape
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                .clear,
-                                Color.white.opacity(state.currentMode == .expanded ? 0.045 : 0.02)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .blur(radius: 18)
-                    .mask(currentShape)
-            }
+            .fill(Color.black)
     }
 
     private var closedLayer: some View {
