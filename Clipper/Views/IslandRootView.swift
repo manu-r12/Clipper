@@ -18,66 +18,76 @@ struct IslandRootView: View {
     @State private var showExpandedContent = false
     @State private var expandedRevealTask: Task<Void, Never>?
 
-    private var shapeParameters: (
-        shoulderInset: CGFloat,
-        shoulderDepth: CGFloat,
-        bottomRadius: CGFloat,
-        shoulderTightness: CGFloat
-    ) {
+    // MARK: - Target size (drives the animated inner frame)
+
+    // SwiftUI reads this every render pass and animates transitions via
+    // .animation(_:value:) when currentMode or expandedContent changes.
+    private var targetSize: CGSize {
+        guard let screen = NSScreen.main else {
+            return CGSize(width: 185, height: 32)
+        }
+        return IslandPositioning.size(
+            for: state.currentMode,
+            on: screen,
+            expandedContent: state.expandedContent
+        )
+    }
+
+    // MARK: - Shape parameters
+    // Radii match Atoll's cornerRadiusInsets: closed (top=6, bottom=14), open (top=19, bottom=24).
+
+    private var currentShape: AdaptiveNotchShape {
         switch state.currentMode {
-        case .closed:
-            return (16, 10, 10, 0.82)
-
-        case .peek:
-            return (18, 11, 14, 0.86)
-
-        case .expanded:
-            return (22, 12.5, 18, 0.92)
+        case .closed:   return AdaptiveNotchShape(topCornerRadius: 6,  bottomCornerRadius: 14)
+        case .peek:     return AdaptiveNotchShape(topCornerRadius: 10, bottomCornerRadius: 18)
+        case .expanded: return AdaptiveNotchShape(topCornerRadius: 19, bottomCornerRadius: 24)
         }
     }
 
-    private var currentShape: AdaptiveNotchShape {
-        AdaptiveNotchShape(
-            shoulderInset: shapeParameters.shoulderInset,
-            shoulderDepth: shapeParameters.shoulderDepth,
-            bottomRadius: shapeParameters.bottomRadius,
-            shoulderTightness: shapeParameters.shoulderTightness
-        )
-    }
+    // MARK: - Body
 
     var body: some View {
         ZStack {
             shellLayer
-
             closedLayer
             peekLayer
             expandedLayer
-        }        .clipShape(currentShape)
+        }
+        // Inner frame: animates between closed/peek/expanded sizes.
+        // The panel is fixed at expanded-size + shadow padding; content grows downward from the top edge.
+        .frame(width: targetSize.width, height: targetSize.height, alignment: .top)
+        .clipShape(currentShape)
+        .compositingGroup()
+        // Shadow lives outside clipShape so it renders around (not clipped by) the notch shape.
+        .shadow(
+            color: state.currentMode == .expanded ? .black.opacity(0.18) : .clear,
+            radius: state.currentMode == .expanded ? 14 : 0,
+            y: state.currentMode == .expanded ? 5 : 0
+        )
         .scaleEffect(pressed ? 0.985 : (state.currentMode == .peek ? 1.002 : 1.0))
+        // Single spring drives the whole transition: frame growth, shape morph, shadow, scale.
         .animation(
             state.currentMode == .peek ? IslandAnimations.peekSpring : IslandAnimations.shellSpring,
             value: state.currentMode
         )
+        .animation(IslandAnimations.shellSpring, value: state.expandedContent)
         .animation(IslandAnimations.peekSpring, value: pressed)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .compositingGroup()
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if state.currentMode != .expanded {
-                state.expandFromUserAction()
-            }
-        }
-        .onLongPressGesture(
-            minimumDuration: 0,
-            maximumDistance: 20,
-            pressing: { isPressing in
-                pressed = isPressing
-            },
-            perform: {}
+        // Hit testing limited to the visible notch shape, not the full panel.
+        .contentShape(currentShape)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in pressed = true }
+                .onEnded { value in
+                    pressed = false
+                    let d = value.translation
+                    guard d.width * d.width + d.height * d.height < 400 else { return }
+                    if state.currentMode != .expanded {
+                        state.expandFromUserAction()
+                    }
+                }
         )
         .onChange(of: state.currentMode) { _, newMode in
             handleModeChange(newMode)
-
             if newMode == .peek {
                 triggerPeekHapticIfAllowed()
             }
@@ -85,8 +95,12 @@ struct IslandRootView: View {
         .onAppear {
             handleModeChange(state.currentMode)
         }
+        // Outer frame: fills the fixed panel, content anchored to the top (screen edge).
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
-    
+
+    // MARK: - Layers
+
     private var shellLayer: some View {
         currentShape
             .fill(
@@ -128,11 +142,6 @@ struct IslandRootView: View {
                     .blur(radius: 18)
                     .mask(currentShape)
             }
-            .shadow(
-                color: state.currentMode == .expanded ? .black.opacity(0.18) : .clear,
-                radius: state.currentMode == .expanded ? 14 : 0,
-                y: state.currentMode == .expanded ? 5 : 0
-            )
     }
 
     private var closedLayer: some View {
@@ -159,8 +168,8 @@ struct IslandRootView: View {
                showExpandedContent,
                let expandedContent = state.expandedContent {
                 expandedContentView(for: expandedContent)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 18)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .transition(
                         .opacity
@@ -180,6 +189,8 @@ struct IslandRootView: View {
                 .environmentObject(nowPlayingState)
         }
     }
+
+    // MARK: - Mode transitions
 
     private func handleModeChange(_ mode: IslandMode) {
         expandedRevealTask?.cancel()

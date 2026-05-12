@@ -8,7 +8,14 @@
 
 /* Begin PBXFileReference section */
 		32777FA62F8E572A00FD53A3 /* Clipper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Clipper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC111111CC111111CC111111 /* MediaRemoteAdapter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaRemoteAdapter.framework; path = Frameworks/MediaRemoteAdapter.framework; sourceTree = SOURCE_ROOT; };
+		CC222222CC222222CC222222 /* mediaremote-adapter.pl */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; name = "mediaremote-adapter.pl"; path = "mediaremote-adapter.pl"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXBuildFile section */
+		CC333333CC333333CC333333 /* MediaRemoteAdapter.framework in Resources */ = {isa = PBXBuildFile; fileRef = CC111111CC111111CC111111 /* MediaRemoteAdapter.framework */; };
+		CC444444CC444444CC444444 /* mediaremote-adapter.pl in Resources */ = {isa = PBXBuildFile; fileRef = CC222222CC222222CC222222 /* mediaremote-adapter.pl */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		32777FA82F8E572A00FD53A3 /* Clipper */ = {
@@ -33,6 +40,8 @@
 			isa = PBXGroup;
 			children = (
 				32777FA82F8E572A00FD53A3 /* Clipper */,
+				CC111111CC111111CC111111 /* MediaRemoteAdapter.framework */,
+				CC222222CC222222CC222222 /* mediaremote-adapter.pl */,
 				32777FA72F8E572A00FD53A3 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -109,6 +118,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC333333CC333333CC333333 /* MediaRemoteAdapter.framework in Resources */,
+				CC444444CC444444CC444444 /* mediaremote-adapter.pl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,8 +266,19 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = W4GU8L4AQM;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -287,8 +309,19 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = W4GU8L4AQM;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

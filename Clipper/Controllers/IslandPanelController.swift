@@ -18,6 +18,9 @@ final class IslandPanelController {
     private var globalClickMonitor: Any?
     private var localKeyMonitor: Any?
 
+    // Extra space below the expanded content so the drop shadow doesn't clip at the panel edge.
+    private static let shadowPadding: CGFloat = 20
+
     init(state: IslandState, nowPlayingState: NowPlayingState) {
         self.state = state
         self.nowPlayingState = nowPlayingState
@@ -47,7 +50,9 @@ final class IslandPanelController {
             panel = newPanel
         }
 
-        reposition(animated: false)
+        // Set the panel once to the maximum (expanded) size and never resize it again.
+        // All visual animation is owned by SwiftUI inside the panel.
+        repositionToMaxFrame()
         panel?.orderFrontRegardless()
 
         startHoverPolling()
@@ -55,22 +60,29 @@ final class IslandPanelController {
         installEscapeKeyMonitor()
     }
 
+    // MARK: - Panel positioning
+
+    // The panel is always the expanded size + shadow padding.
+    // SwiftUI animates the inner content frame between modes — the panel itself never moves.
+    private func repositionToMaxFrame() {
+        guard let panel, let screen = NSScreen.main else { return }
+
+        let expandedSize = IslandPositioning.expandedSize(for: .media)
+        let pad = IslandPanelController.shadowPadding
+        let panelWidth  = expandedSize.width  + pad * 2
+        let panelHeight = expandedSize.height + pad
+
+        let screenFrame = screen.frame
+        let originX = screenFrame.midX - panelWidth / 2
+        let originY = screenFrame.maxY - panelHeight
+
+        panel.setFrame(NSRect(x: originX, y: originY, width: panelWidth, height: panelHeight), display: true)
+    }
+
+    // MARK: - State binding
+
     private func bindState() {
-        state.$mode
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.reposition(animated: true)
-            }
-            .store(in: &cancellables)
-
-        state.$expandedContent
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                guard self?.state.currentMode == .expanded else { return }
-                self?.reposition(animated: true)
-            }
-            .store(in: &cancellables)
-
+        // Only update key focus when the pin state changes; visual transitions are SwiftUI's job.
         state.$isPinnedOpen
             .receive(on: RunLoop.main)
             .sink { [weak self] isPinned in
@@ -90,6 +102,8 @@ final class IslandPanelController {
         }
     }
 
+    // MARK: - Input monitors
+
     private func installEscapeKeyMonitor() {
         guard localKeyMonitor == nil else { return }
 
@@ -105,43 +119,19 @@ final class IslandPanelController {
         }
     }
 
-    private func reposition(animated: Bool) {
-        guard let panel, let screen = NSScreen.main else { return }
+    private func installOutsideClickMonitor() {
+        guard globalClickMonitor == nil else { return }
 
-        let size = IslandPositioning.size(
-            for: state.currentMode,
-            on: screen,
-            expandedContent: state.expandedContent
-        )
-
-        let frame = IslandPositioning.topCenterFrame(for: size, on: screen)
-
-        if animated {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = animationDuration(for: state.currentMode)
-                context.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.85, 0.25, 1.0)
-                panel.animator().setFrame(frame, display: true)
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.state.closeFromOutsideClick()
             }
-            // Use setFrameTopLeftPoint to ensure the top edge remains pinned during transitions
-            DispatchQueue.main.async {
-                panel.setFrameTopLeftPoint(NSPoint(x: frame.origin.x, y: frame.origin.y + frame.size.height))
-            }
-        } else {
-            // Use setFrameTopLeftPoint to ensure the top edge remains pinned during transitions
-            panel.setFrameTopLeftPoint(NSPoint(x: frame.origin.x, y: frame.origin.y + frame.size.height))
         }
     }
 
-    private func animationDuration(for mode: IslandMode) -> TimeInterval {
-        switch mode {
-        case .closed:
-            return 0.30
-        case .peek:
-            return 0.24
-        case .expanded:
-            return 0.36
-        }
-    }
+    // MARK: - Hover polling
 
     private func startHoverPolling() {
         hoverTimer?.invalidate()
@@ -188,17 +178,4 @@ final class IslandPanelController {
             break
         }
     }
-
-    private func installOutsideClickMonitor() {
-        guard globalClickMonitor == nil else { return }
-
-        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.leftMouseDown, .rightMouseDown]
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.state.closeFromOutsideClick()
-            }
-        }
-    }
 }
-
