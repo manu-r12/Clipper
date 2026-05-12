@@ -46,9 +46,7 @@ final class IslandState: ObservableObject {
             guard !Task.isCancelled else { return }
             guard !self.isPinnedOpen else { return }
 
-            withAnimation(IslandAnimations.peekSpring) {
-                self.mode = .peek
-            }
+            self.mode = .peek
         }
     }
 
@@ -73,10 +71,7 @@ final class IslandState: ObservableObject {
             guard !Task.isCancelled else { return }
             guard !self.isPinnedOpen else { return }
 
-            withAnimation(IslandAnimations.peekSpring) {
-                self.mode = .closed
-            }
-
+            self.mode = .closed
             self.reopenRequiresExit = true
         }
     }
@@ -100,9 +95,7 @@ final class IslandState: ObservableObject {
         reopenRequiresExit = false
         expandedContent = .media
 
-        withAnimation(IslandAnimations.shellSpring) {
-            mode = .expanded
-        }
+        mode = .expanded
     }
 
     func closeAll() {
@@ -113,9 +106,7 @@ final class IslandState: ObservableObject {
         reopenRequiresExit = true
         expandedContent = nil
 
-        withAnimation(IslandAnimations.shellSpring) {
-            mode = .closed
-        }
+        mode = .closed
     }
 
     func closeFromOutsideClick() {
