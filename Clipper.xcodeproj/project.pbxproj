@@ -6,16 +6,16 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXFileReference section */
-		32777FA62F8E572A00FD53A3 /* Clipper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Clipper.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		CC111111CC111111CC111111 /* MediaRemoteAdapter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaRemoteAdapter.framework; path = Frameworks/MediaRemoteAdapter.framework; sourceTree = SOURCE_ROOT; };
-		CC222222CC222222CC222222 /* mediaremote-adapter.pl */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; name = "mediaremote-adapter.pl"; path = "mediaremote-adapter.pl"; sourceTree = SOURCE_ROOT; };
-/* End PBXFileReference section */
-
 /* Begin PBXBuildFile section */
 		CC333333CC333333CC333333 /* MediaRemoteAdapter.framework in Resources */ = {isa = PBXBuildFile; fileRef = CC111111CC111111CC111111 /* MediaRemoteAdapter.framework */; };
 		CC444444CC444444CC444444 /* mediaremote-adapter.pl in Resources */ = {isa = PBXBuildFile; fileRef = CC222222CC222222CC222222 /* mediaremote-adapter.pl */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		32777FA62F8E572A00FD53A3 /* Clipper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Clipper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC111111CC111111CC111111 /* MediaRemoteAdapter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaRemoteAdapter.framework; path = Frameworks/MediaRemoteAdapter.framework; sourceTree = SOURCE_ROOT; };
+		CC222222CC222222CC222222 /* mediaremote-adapter.pl */ = {isa = PBXFileReference; lastKnownFileType = text.script.perl; path = "mediaremote-adapter.pl"; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		32777FA82F8E572A00FD53A3 /* Clipper */ = {
