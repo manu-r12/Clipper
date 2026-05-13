@@ -4,8 +4,11 @@
   Turns the notch into a live, interactive island — media controls, clipboard history, and more.
 
   <p align="center">
-    <img src="https://github.com/user-attachments/assets/d577da20-38ce-4b84-9cfc-3d7522b6670a" width="640"/>
-  </p>
+  <img width="567" alt="Screenshot 2026-05-12 at 11 44 36 PM" src="https://github.com/user-attachments/assets/0438a210-e40d-4ee5-a7d8-640d7b8a7da2" />
+
+</p>
+
+
 
   <p align="center">
   <img src="https://img.shields.io/badge/Platform-macOS%2014+-black?style=for-the-badge&logo=apple">
