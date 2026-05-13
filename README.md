@@ -1,8 +1,12 @@
 # Clipper ✂️ (currently building...)
 
-A minimal Dynamic Island–style floating UI for macOS, built using AppKit + SwiftUI.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/d577da20-38ce-4b84-9cfc-3d7522b6670a"
+       width="600"/>
+</p>
 
-https://github.com/user-attachments/assets/e31aad22-f018-480c-b497-7372fa887317
+#### A minimal Dynamic Island–style floating UI for macOS, built using AppKit + SwiftUI.
+
 
 ### Implemented :
 - Floating top-center island
