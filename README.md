@@ -1,7 +1,7 @@
 # Clipper ✂️
 
 **A Dynamic Island–style notch UI for macOS.**
-  Turns the notch into a live, interactive island — media controls, clipboard history, and more.
+  Turns the notch into a live, interactive island, media controls, clipboard history, and more.
 
   <p align="center">
   <img width="567" alt="Screenshot 2026-05-12 at 11 44 36 PM" src="https://github.com/user-attachments/assets/0438a210-e40d-4ee5-a7d8-640d7b8a7da2" />
