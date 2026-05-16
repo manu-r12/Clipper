@@ -23,6 +23,9 @@ private struct NowPlayingUpdate: Codable {
     let diff: Bool?
 }
 
+private struct MediaApplications {}
+
+
 private struct NowPlayingPayload: Codable {
     let title: String?
     let artist: String?
