@@ -14,7 +14,6 @@
   <img src="https://img.shields.io/badge/Platform-macOS%2014+-black?style=for-the-badge&logo=apple">
   <img src="https://img.shields.io/badge/Swift-6-orange?style=for-the-badge&logo=swift">
   <img src="https://img.shields.io/badge/SwiftUI-UI-blue?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Status-Active%20Development-purple?style=for-the-badge">
 </p>
 
   ---
