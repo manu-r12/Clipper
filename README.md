@@ -56,6 +56,4 @@
   - macOS 14+
   - MacBook with notch (Pro / Air)
 
-  ---
 
-  > Currently in active development.
